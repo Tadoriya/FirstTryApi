@@ -14,17 +14,17 @@ namespace FirstTryApi.Controllers
     {
         private readonly UserContext _context;
 
-        public UserController(UserContext context)
+        public GameController(UserContext context)
         {
             _context = context;
         }
 
         [HttpGet("Progression/{userId}")]
-        public async Task<ActionResult<Progression>> GetProgression(int id)
+        public async Task<ActionResult<Progression>> GetProgression(int userId)
         {
-            var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId==id);
+            var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId==userId);
             if (prog == null)
-                return NotFound(new ErrorReponse("Progression not found", "PROGRESSION_NOT_FOUND"));
+                return NotFound(new ErrorResponse("Progression not found", "PROGRESSION_NOT_FOUND"));
             return Ok(prog);
 
         }
@@ -34,7 +34,7 @@ namespace FirstTryApi.Controllers
         {
             var exists = await _context.Progressions.AnyAsync(u => u.UserId==id);
             if (exists)
-                return BadRequest(new ErrorReponse("User has already a progression", "PROGRESSION_EXISTS"));
+                return BadRequest(new ErrorResponse("User has already a progression", "PROGRESSION_EXISTS"));
 
             var prog=new Progression(id);
             try
@@ -46,17 +46,17 @@ namespace FirstTryApi.Controllers
             }
             catch
             {
-                return BadRequest(new ErrorReponse("Failed to initialize progression", "INITIALIZATION_FAILED"));
+                return BadRequest(new ErrorResponse("Failed to initialize progression", "INITIALIZATION_FAILED"));
             }
 
         }
 
-        [HttpPost("Click/{userId}}")]
-        public async Task<ActionResult<ClickResponse>> Click(int id)
+        [HttpPost("Click/{userId}")]
+        public async Task<ActionResult<ClickResponse>> Click(int userId)
         {
-            var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == id);
+            var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId);
             if (prog == null)
-                return NotFound(new ErrorReponse("User does not have a progression", "NO_PROGRESSION"));
+                return NotFound(new ErrorResponse("User does not have a progression", "NO_PROGRESSION"));
             prog.AddClick();
             await _context.SaveChangesAsync();
             return Ok(new ClickResponse(prog.Count,prog.Multiplier));
@@ -64,11 +64,11 @@ namespace FirstTryApi.Controllers
         }
 
         [HttpGet("ResetCost/{userId}")]
-        public async Task<ActionResult<RestCostResponse>> GetResetCost(int id)
+        public async Task<ActionResult<ResetCostResponse>> GetResetCost(int id)
         {
             var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == id);
             if (prog==null)
-                return BadRequest(new ErrorReponse("User has no progression", "NO_PROGRESSION"));
+                return BadRequest(new ErrorResponse("User has no progression", "NO_PROGRESSION"));
 
             int cost = prog.CalculateResetCost();
             return Ok(new ResetCostResponse(cost));
@@ -76,19 +76,19 @@ namespace FirstTryApi.Controllers
         }
 
         [HttpPost("Reset/{userId}")]
-        public async Task<ActionResult<Progressions>> Reset(int id)
+        public async Task<ActionResult<Progression>> Reset(int id)
         {
             var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == id);
             if (prog == null)
-                return BadRequest(new ErrorReponse("User has no progression", "NO_PROGRESSION"));
+                return BadRequest(new ErrorResponse("User has no progression", "NO_PROGRESSION"));
 
             int recost= prog.CalculateResetCost();
             if(prog.Count < recost)
-                return BadRequest(new ErrorReponse("Not enough clicks to reset", "INSUFFICIENT_CLICKS"));
+                return BadRequest(new ErrorResponse("Not enough clicks to reset", "INSUFFICIENT_CLICKS"));
             if(prog.Count > GlobaleScore.BestScore)
             {
                 GlobaleScore.BestScore = recost;
-                GlobalScore.UserId = id;
+                GlobaleScore.UserId = id;
             }
             prog.Count = 0;
             prog.Multiplier++;
@@ -102,7 +102,7 @@ namespace FirstTryApi.Controllers
         {
             var best = await _context.Progressions.OrderByDescending(u => u.BestScore).FirstOrDefaultAsync();
             if (best == null)
-                return NotFound(new ErrorReponse("No progressions found", "NO_PROGRESSIONS"));
+                return NotFound(new ErrorResponse("No progressions found", "NO_PROGRESSIONS"));
 
             return Ok(new BestScoreResponse(best.UserId, best.BestScore));
 

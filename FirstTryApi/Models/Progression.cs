@@ -13,6 +13,7 @@ public class Progression
     public int Id { get; set; }
     public int UserId { get; set; }
     public int Count { get; set; }
+    public int TotalClickValue {  get; set; }
     public int Multiplier { get; set; }
     public int BestScore { get; set; }
 
@@ -23,6 +24,7 @@ public class Progression
     {
         UserId = userid;
         Count = 0;
+        TotalClickValue = 0;
         Multiplier = 1;
         BestScore = 0;
     }

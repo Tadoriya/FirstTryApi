@@ -42,7 +42,7 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
+            return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         return ToPublic(user);
 
     }
@@ -52,10 +52,10 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Pseudo == info.Pseudo);
         if (user == null)
-            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
+            return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         var result = _passwordHasher.VerifyHashedPassword(user, user.MotdePasse, info.MotdePasse);
         if (result == PasswordVerificationResult.Success)
-            return Unauthorized(new ErrorReponse("Invalid password", "INVALID_PASSWORD"));
+            return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));
         else      
             return ToPublic(user);
 
@@ -68,7 +68,7 @@ public class UserController : ControllerBase
     public async Task<ActionResult<UserInfo>> Register([FromBody] UserInfo newUser)
    {
         if (await _context.Users.AnyAsync(u => u.Pseudo == newUser.Pseudo))
-            return Conflict(new ErrorReponse("Username already exists", "USERNAME_EXISTS"));
+            return Conflict(new ErrorResponse("Username already exists", "USERNAME_EXISTS"));
        var user = new User
        {
            Pseudo = newUser.Pseudo,
@@ -86,7 +86,7 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
+            return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         user.Pseudo=newone.Pseudo;
         user.MotdePasse= _passwordHasher.HashPassword(user, newone.MotdePasse);
         user.Role=newone.Role;
@@ -99,7 +99,7 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND");
+            return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
         return NoContent();

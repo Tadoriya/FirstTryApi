@@ -14,5 +14,7 @@ namespace FirstTryApi.Models
 
         public DbSet<User> Users { get; set; } = null! ;
         public DbSet<Progression> Progressions { get; set; } = null!;
+        public DbSet<Item> Item { get; set; } = null!;
+        public DbSet<InventoryEntry> Inventories { get; set; } = null!;
     }
 }
