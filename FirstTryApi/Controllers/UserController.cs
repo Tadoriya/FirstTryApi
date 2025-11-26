@@ -13,12 +13,13 @@ public class UserController : ControllerBase
 {
     private readonly UserContext _context;
     private readonly PasswordHasher<User> _passwordHasher;
+
     public UserController(UserContext context, PasswordHasher<User> motdepasse)
     {
-          _context = context;
-        _passwordHasher=motdepasse;
+        _context = context;
+        _passwordHasher = motdepasse;
     }
-    
+
 
     private static UserPublic ToPublic(User u)
     {
@@ -35,13 +36,13 @@ public class UserController : ControllerBase
     {
         return await _context.Users.ToListAsync();
     }
-   
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<UserPublic>> GetById(int id)
     {
-        var user= await _context.Users.FindAsync(id);
+        var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound($"Aucun utilisateur trouvé avec l'id {id}");
+            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
         return ToPublic(user);
 
     }
@@ -51,12 +52,12 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Pseudo == info.Pseudo);
         if (user == null)
-            return NotFound("Pseudo incorrect");
+            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
         var result = _passwordHasher.VerifyHashedPassword(user, user.MotdePasse, info.MotdePasse);
-        if(result==PasswordVerificationResult.Success)
+        if (result == PasswordVerificationResult.Success)
+            return Unauthorized(new ErrorReponse("Invalid password", "INVALID_PASSWORD"));
+        else      
             return ToPublic(user);
-        else
-            return Unauthorized("Mdp incorrect");
 
 
     }
@@ -64,10 +65,10 @@ public class UserController : ControllerBase
 
 
     [HttpPost("Register")]
-   public async Task<ActionResult<UserInfo>> Register(UserInfo newUser)
+    public async Task<ActionResult<UserInfo>> Register([FromBody] UserInfo newUser)
    {
         if (await _context.Users.AnyAsync(u => u.Pseudo == newUser.Pseudo))
-            return Conflict("deja inscrit :c");
+            return Conflict(new ErrorReponse("Username already exists", "USERNAME_EXISTS"));
        var user = new User
        {
            Pseudo = newUser.Pseudo,
@@ -85,9 +86,9 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound($"Utilisateur avec l'id ={id} n'est pas trouvé :C");
+            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND"));
         user.Pseudo=newone.Pseudo;
-        user.MotdePasse=newone.MotdePasse;
+        user.MotdePasse= _passwordHasher.HashPassword(user, newone.MotdePasse);
         user.Role=newone.Role;
         await _context.SaveChangesAsync();
         return Ok(ToPublic(user));
@@ -98,7 +99,7 @@ public class UserController : ControllerBase
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
-            return NotFound($"Utilisateur avec l'id ={id} n'est pas trouvé :C");
+            return NotFound(new ErrorReponse("User not found", "USER_NOT_FOUND");
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
         return NoContent();
@@ -109,7 +110,7 @@ public class UserController : ControllerBase
    [HttpGet("All")]
    public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
    {
-       var users= await _context.Users.Select(u => ToPublic(u)).ToListAsync();
+       var users= await _context.Users.ToListAsync();
         return Ok(users);
 
    }
