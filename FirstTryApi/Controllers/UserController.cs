@@ -12,9 +12,9 @@ namespace FirstTryApi.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UserContext _context;
-    private readonly PasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserController(UserContext context, PasswordHasher<User> motdepasse)
+    public UserController(UserContext context, IPasswordHasher<User> motdepasse)
     {
         _context = context;
         _passwordHasher = motdepasse;
@@ -26,7 +26,7 @@ public class UserController : ControllerBase
         return new UserPublic
         {
             Id = u.Id,
-            Pseudo = u.Pseudo,
+            Username = u.Username,
             Role = u.Role
         };
     }
@@ -37,7 +37,7 @@ public class UserController : ControllerBase
         return await _context.Users.ToListAsync();
     }
 
-    [HttpGet("User/{id}")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<UserPublic>> GetById(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -48,43 +48,44 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("Login")]
-    public async Task<ActionResult<UserPublic>> Login(UserInfo info)
+    public async Task<ActionResult<UserPublic>> Login([FromBody] UserPass info)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Pseudo == info.Pseudo);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == info.Username);
         if (user == null)
             return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
-        var result = _passwordHasher.VerifyHashedPassword(user, user.MotdePasse, info.MotdePasse);
+        var result = _passwordHasher.VerifyHashedPassword(user, user.Password, info.Password);
         if (result == PasswordVerificationResult.Failed)
-            return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));
-        else      
-            return ToPublic(user);
+            return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));      
+
+        return ToPublic(user);
 
     }
 
 
 
     [HttpPost("Register")]
-    public async Task<ActionResult<UserPublic>> Register([FromBody] UserInfo info)
+    public async Task<ActionResult<UserPublic>> Register([FromBody] UserPass info)
     {
         try
         {
-            if (await _context.Users.AnyAsync(u => u.Pseudo == info.Pseudo))
+            if (await _context.Users.AnyAsync(u => u.Username == info.Username))
                 return BadRequest(new ErrorResponse("Username already exists", "USERNAME_EXISTS"));
 
             var user = new User
             {
-                Pseudo = info.Pseudo,
+                Username = info.Username,
                 Role = UserRole.User
             };
-            user.MotdePasse = _passwordHasher.HashPassword(user, info.MotdePasse);
+            user.Password = _passwordHasher.HashPassword(user, info.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, ToPublic(user));
+            return Ok(ToPublic(user));
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             return BadRequest(new ErrorResponse("Registration failed", "REGISTRATION_FAILED"));
         }
     }
@@ -95,8 +96,8 @@ public class UserController : ControllerBase
         var user = await _context.Users.FindAsync(id);
         if (user == null)
             return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
-        user.Pseudo=newone.Pseudo;
-        user.MotdePasse= _passwordHasher.HashPassword(user, newone.MotdePasse);
+        user.Username=newone.Username;
+        user.Password= _passwordHasher.HashPassword(user, newone.Password);
         user.Role=newone.Role;
         await _context.SaveChangesAsync();
         return Ok(ToPublic(user));
@@ -134,7 +135,7 @@ public class UserController : ControllerBase
     [HttpGet("Search/{name}")]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetByName(string name)
     {
-        var found = await _context.Users.Where(u => u.Pseudo.Contains(name)).Select(u => ToPublic(u)).ToListAsync();
+        var found = await _context.Users.Where(u => u.Username.Contains(name)).Select(u => ToPublic(u)).ToListAsync();
         return Ok(found);
     }
 

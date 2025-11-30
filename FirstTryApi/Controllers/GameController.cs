@@ -51,7 +51,7 @@ public class GameController : ControllerBase
 
     }
 
-    [HttpPost("Click/{userId}")]
+    [HttpGet("Click/{userId}")]
     public async Task<ActionResult<ClickResponse>> Click(int userId)
     {
         var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId);
