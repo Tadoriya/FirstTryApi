@@ -1,8 +1,7 @@
-namespace FirstTryApi.Models
-{
+namespace FirstTryApi.Models;
 
-    public class UserUpdate : UserInfo
-    {
-        public UserRole Role { get; set; } = UserRole.User;
-    }
+
+public class UserUpdate : UserInfo
+{
+    public UserRole Role { get; set; } = UserRole.User;
 }

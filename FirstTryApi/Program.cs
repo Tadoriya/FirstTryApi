@@ -14,6 +14,7 @@ public class Program
         builder.Services.AddDbContext<UserContext>(options => options.UseSqlite("Data Source=User.db")); //by me
         builder.Services.AddScoped<PasswordHasher<User>>();
         builder.Services.AddControllers();
+        builder.Services.AddHttpClient();
 
         builder.Services.AddCors(options =>
         {

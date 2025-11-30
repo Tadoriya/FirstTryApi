@@ -37,7 +37,7 @@ public class UserController : ControllerBase
         return await _context.Users.ToListAsync();
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("User/{id}")]
     public async Task<ActionResult<UserPublic>> GetById(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -54,34 +54,42 @@ public class UserController : ControllerBase
         if (user == null)
             return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         var result = _passwordHasher.VerifyHashedPassword(user, user.MotdePasse, info.MotdePasse);
-        if (result == PasswordVerificationResult.Success)
+        if (result == PasswordVerificationResult.Failed)
             return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));
         else      
             return ToPublic(user);
-
 
     }
 
 
 
     [HttpPost("Register")]
-    public async Task<ActionResult<UserInfo>> Register([FromBody] UserInfo newUser)
-   {
-        if (await _context.Users.AnyAsync(u => u.Pseudo == newUser.Pseudo))
-            return Conflict(new ErrorResponse("Username already exists", "USERNAME_EXISTS"));
-       var user = new User
-       {
-           Pseudo = newUser.Pseudo,
-           Role = UserRole.User
-       };
-        user.MotdePasse= _passwordHasher.HashPassword(user, newUser.MotdePasse);
-       _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById),new {id =user.Id}, ToPublic(user)) ;
+    public async Task<ActionResult<UserPublic>> Register([FromBody] UserInfo info)
+    {
+        try
+        {
+            if (await _context.Users.AnyAsync(u => u.Pseudo == info.Pseudo))
+                return BadRequest(new ErrorResponse("Username already exists", "USERNAME_EXISTS"));
 
-   }
+            var user = new User
+            {
+                Pseudo = info.Pseudo,
+                Role = UserRole.User
+            };
+            user.MotdePasse = _passwordHasher.HashPassword(user, info.MotdePasse);
 
-    [HttpPut("{id:int}")]
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, ToPublic(user));
+        }
+        catch
+        {
+            return BadRequest(new ErrorResponse("Registration failed", "REGISTRATION_FAILED"));
+        }
+    }
+
+    [HttpPut("User/{id}")]
     public async Task<ActionResult<UserPublic>> UpdateUser(int id, UserUpdate newone)
     {
         var user = await _context.Users.FindAsync(id);
@@ -94,7 +102,7 @@ public class UserController : ControllerBase
         return Ok(ToPublic(user));
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("User/{id}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -110,8 +118,8 @@ public class UserController : ControllerBase
    [HttpGet("All")]
    public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
    {
-       var users= await _context.Users.ToListAsync();
-        return Ok(users);
+       var users= await _context.Users.Select(u => ToPublic(u)).ToListAsync();
+       return Ok(users);
 
    }
 
