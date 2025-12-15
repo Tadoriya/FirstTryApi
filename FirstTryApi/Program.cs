@@ -1,7 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using FirstTryApi.Models;
+using FirstTryApi.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+
+
 namespace FirstTryApi;
 
 public class Program
@@ -11,10 +18,35 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-        builder.Services.AddDbContext<UserContext>(options => options.UseSqlite("Data Source=User.db")); //by me
+        builder.Services.AddDbContext<UserContext>(options => options.UseSqlite("Data Source=User.db")); 
         builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         builder.Services.AddControllers();
         builder.Services.AddHttpClient();
+        builder.Services.AddAuthorization();
+
+        builder.Services.AddScoped<JwtService>();
+       // builder.Services.AddScoped<UserService>();
+        //builder.Services.AddScoped<GameService>();
+        //builder.Services.AddScoped<InventoryService>();
+
+
+        builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ClockSkew = TimeSpan.FromMinutes(10), 
+                ValidateLifetime = true, 
+                ValidateIssuerSigningKey = true, 
+                ValidAudience = "localhost:5000", 
+                ValidIssuer = "localhost:5000", 
+                IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes("MessiIsTheGreatestOfAllTime8BallonDors")
+                ),
+                RoleClaimType = ClaimTypes.Role 
+            };
+        });
 
         builder.Services.AddCors(options =>
         {
@@ -34,6 +66,7 @@ public class Program
             app.UseSwaggerUI();
         }
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.UseCors("AllowAll");

@@ -17,16 +17,20 @@ public class Progression
     {
         UserId = userid;
         Count = 0;
-        TotalClickValue = 0;
+        TotalClickValue = 1;
         Multiplier = 1;
         BestScore = 0;
     }
 
     public void AddClick()
     {
-        Count += TotalClickValue * Multiplier;
-        if (Count > BestScore)
-            BestScore = Count;
+        if (Count > GlobaleScore.BestScore)
+        {
+            GlobaleScore.BestScore = Count;
+            GlobaleScore.UserId=UserId;
+        }
+        Count += Multiplier * TotalClickValue;
+        
     }
 
     public int CalculateResetCost()

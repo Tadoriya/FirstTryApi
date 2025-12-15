@@ -1,13 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Authorization;
 using FirstTryApi.Models;
+using FirstTryApi.Services;
 using System.Threading.Tasks;
 using System.Diagnostics.SymbolStore;
+using System.Security.Claims;
+
 
 namespace FirstTryApi.Controllers;
 
+
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class GameController : ControllerBase
@@ -19,24 +24,43 @@ public class GameController : ControllerBase
         _context = context;
     }
 
-    [HttpGet("Progression/{userId}")]
-    public async Task<ActionResult<Progression>> GetProgression(int userId)
+    private int? GetUserId()
     {
-        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId==userId);
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return null;
+        }
+        return userId;
+    }
+
+
+    [HttpGet("Progression")]
+    [Authorize]
+    public async Task<ActionResult<Progression>> GetProgression()
+    {
+        var userId = GetUserId();
+        if (userId == null)
+            return Unauthorized(new ErrorResponse("Invalid token", "INVALID_TOKEN"));
+        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId==userId.Value);
         if (prog == null)
             return NotFound(new ErrorResponse("Progression not found", "PROGRESSION_NOT_FOUND"));
         return Ok(prog);
 
     }
 
-    [HttpGet("Initialize/{userId}")]
-    public async Task<ActionResult<Progression>> InitProgression(int userId)
+    [HttpGet("Initialize")]
+    [Authorize]
+    public async Task<ActionResult<Progression>> InitProgression()
     {
-        var exists = await _context.Progressions.AnyAsync(u => u.UserId==userId);
+        var userId = GetUserId();
+        if(userId == null)
+            return Unauthorized(new ErrorResponse("Invalid token", "INVALID_TOKEN"));
+        var exists = await _context.Progressions.AnyAsync(u => u.UserId==userId.Value);
         if (exists)
             return BadRequest(new ErrorResponse("User has already a progression", "PROGRESSION_EXISTS"));
 
-        var prog=new Progression(userId);
+        var prog=new Progression(userId.Value);
         try
         {
             
@@ -51,10 +75,14 @@ public class GameController : ControllerBase
 
     }
 
-    [HttpGet("Click/{userId}")]
-    public async Task<ActionResult<ClickResponse>> Click(int userId)
+    [HttpGet("Click")]
+    [Authorize]
+    public async Task<ActionResult<ClickResponse>> Click()
     {
-        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId);
+        var userId = GetUserId();
+        if(userId == null) 
+            return Unauthorized(new ErrorResponse("Invalid token", "INVALID_TOKEN"));
+        var prog = await _context.Progressions.FirstOrDefaultAsync(u =>u.UserId == userId.Value);
         if (prog == null)
             return NotFound(new ErrorResponse("User does not have a progression", "NO_PROGRESSION"));
         prog.AddClick();
@@ -63,10 +91,14 @@ public class GameController : ControllerBase
 
     }
 
-    [HttpGet("ResetCost/{userId}")]
-    public async Task<ActionResult<ResetCostResponse>> GetResetCost(int userId)
+    [HttpGet("ResetCost")]
+    [Authorize]
+    public async Task<ActionResult<ResetCostResponse>> GetResetCost()
     {
-        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId);
+        var userId = GetUserId();
+        if (userId == null)
+            return Unauthorized(new ErrorResponse("Invalid token", "INVALID_TOKEN"));
+        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId.Value);
         if (prog==null)
             return BadRequest(new ErrorResponse("User has no progression", "NO_PROGRESSION"));
 
@@ -75,10 +107,14 @@ public class GameController : ControllerBase
 
     }
 
-    [HttpPost("Reset/{userId}")]
-    public async Task<ActionResult<Progression>> Reset(int userId)
+    [HttpPost("Reset")]
+    [Authorize]
+    public async Task<ActionResult<Progression>> Reset()
     {
-        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId);
+        var userId = GetUserId();
+        if (userId == null)
+            return Unauthorized(new ErrorResponse("Invalid token", "INVALID_TOKEN"));
+        var prog = await _context.Progressions.FirstOrDefaultAsync(u => u.UserId == userId.Value);
         if (prog == null)
             return BadRequest(new ErrorResponse("User does not have a progression", "NO_PROGRESSION"));
 
@@ -88,7 +124,7 @@ public class GameController : ControllerBase
         if(prog.Count > GlobaleScore.BestScore)
         {
             GlobaleScore.BestScore = recost;
-            GlobaleScore.UserId = userId;
+            GlobaleScore.UserId = userId.Value;
         }
         prog.Count = 0;
         prog.Multiplier++;
@@ -98,6 +134,7 @@ public class GameController : ControllerBase
     }
 
     [HttpGet("BestScore")]
+    [Authorize]
     public async Task<ActionResult<BestScoreResponse>> GetBestScore()
     {
         var best = await _context.Progressions.OrderByDescending(u => u.BestScore).FirstOrDefaultAsync();

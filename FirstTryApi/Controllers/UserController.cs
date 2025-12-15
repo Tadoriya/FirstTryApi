@@ -2,22 +2,29 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 using FirstTryApi.Models;
+using FirstTryApi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+
 
 namespace FirstTryApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
     private readonly UserContext _context;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly JwtService _jwtService;
 
-    public UserController(UserContext context, IPasswordHasher<User> motdepasse)
+    public UserController(UserContext context, IPasswordHasher<User> motdepasse, JwtService jwtservice)
     {
         _context = context;
         _passwordHasher = motdepasse;
+        _jwtService = jwtservice;
     }
 
 
@@ -31,13 +38,20 @@ public class UserController : ControllerBase
         };
     }
 
-    [HttpGet("Debug")]
-    public async Task<ActionResult<IEnumerable<User>>> Debug()
+    private int? GetUserId()
     {
-        return await _context.Users.ToListAsync();
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return null;
+        }
+        return userId;
     }
 
+
+
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<UserPublic>> GetById(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -48,49 +62,57 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("Login")]
-    public async Task<ActionResult<UserPublic>> Login([FromBody] UserPass info)
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> Login([FromBody] UserPass info)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == info.Username);
         if (user == null)
             return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         var result = _passwordHasher.VerifyHashedPassword(user, user.Password, info.Password);
         if (result == PasswordVerificationResult.Failed)
-            return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));      
+            return Unauthorized(new ErrorResponse("Invalid password", "INVALID_PASSWORD"));
+        var token = _jwtService.GenerateToken(user);
 
-        return ToPublic(user);
+        return Ok(new {token=token, user=ToPublic(user)});
 
     }
 
 
 
     [HttpPost("Register")]
-    public async Task<ActionResult<UserPublic>> Register([FromBody] UserPass info)
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> Register([FromBody] UserPass info)
     {
         try
         {
+            
             if (await _context.Users.AnyAsync(u => u.Username == info.Username))
                 return BadRequest(new ErrorResponse("Username already exists", "USERNAME_EXISTS"));
+
+            var admin = await _context.Users.AnyAsync(u => u.Role == UserRole.Admin);
 
             var user = new User
             {
                 Username = info.Username,
-                Role = UserRole.User
+                Role = admin ? UserRole.User : UserRole.Admin
             };
             user.Password = _passwordHasher.HashPassword(user, info.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(ToPublic(user));
+            var token = _jwtService.GenerateToken(user);
+
+            return Ok(new { token = token, user = ToPublic(user) });
         }
-        catch (Exception ex)
+        catch 
         {
-            Console.WriteLine(ex);
             return BadRequest(new ErrorResponse("Registration failed", "REGISTRATION_FAILED"));
         }
     }
 
     [HttpPut("User/{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<UserPublic>> UpdateUser(int id, UserUpdate newone)
     {
         var user = await _context.Users.FindAsync(id);
@@ -104,6 +126,7 @@ public class UserController : ControllerBase
     }
 
     [HttpDelete("User/{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteUser(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -111,13 +134,14 @@ public class UserController : ControllerBase
             return NotFound(new ErrorResponse("User not found", "USER_NOT_FOUND"));
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
-        return NoContent();
+        return Ok(new {message =  "User deleted succesfully" } );
     }
     
  
     
    [HttpGet("All")]
-   public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
    {
        var users= await _context.Users.Select(u => ToPublic(u)).ToListAsync();
        return Ok(users);
@@ -125,6 +149,7 @@ public class UserController : ControllerBase
    }
 
     [HttpGet("AllAdmin")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetAllAdmins()
     {
         var admins = await _context.Users.Where(u => u.Role==UserRole.Admin).Select(u => ToPublic(u)).ToListAsync();
@@ -133,6 +158,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("Search/{name}")]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetByName(string name)
     {
         var found = await _context.Users.Where(u => u.Username.Contains(name)).Select(u => ToPublic(u)).ToListAsync();
