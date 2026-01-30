@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
+using FirstTryApi.Middlewares;
 
 
 namespace FirstTryApi;
@@ -25,9 +26,10 @@ public class Program
         builder.Services.AddAuthorization();
 
         builder.Services.AddScoped<JwtService>();
-       // builder.Services.AddScoped<UserService>();
-        //builder.Services.AddScoped<GameService>();
-        //builder.Services.AddScoped<InventoryService>();
+        builder.Services.AddScoped<UserService>();
+        builder.Services.AddScoped<GameService>();
+        builder.Services.AddScoped<InventoryService>();
+
 
 
         builder.Services
@@ -58,6 +60,8 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
+        app.Logger.LogInformation("Application is starting up...");
+
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -65,6 +69,9 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+        
+        app.UseMiddleware<ErrorHandlingMiddleware>();
+        app.UseMiddleware<LoggingMiddleware>();
 
         app.UseAuthentication();
         app.UseAuthorization();
@@ -73,6 +80,7 @@ public class Program
         //app.UseCors("AllowSpecificOrigin");
         app.MapControllers();
 
+        app.Logger.LogInformation("Application startup complete. Ready to receive requests.");
 
         app.Run();
     }

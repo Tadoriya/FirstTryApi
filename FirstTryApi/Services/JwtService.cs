@@ -1,15 +1,21 @@
 using System;
-using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using FirstTryApi.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FirstTryApi.Services;
 
 public class JwtService
 {
+    private readonly IConfiguration _configuration;
+
+    public JwtService(IConfiguration configuration)
+    {
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    }
 
     public string GenerateToken(User user)
     {
@@ -20,14 +26,17 @@ public class JwtService
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MessiIsTheGreatestOfAllTime8BallonDors"));
-        SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        // ✅ IMPORTANT: compatible avec le test du prof (configMock.Setup(c => c["JWTKey"])...)
+        var keyString = _configuration["JWTKey"] ?? "MessiIsTheGreatestOfAllTime8BallonDors";
 
-        JwtSecurityToken token = new JwtSecurityToken(
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
             issuer: "localhost:5000",
             audience: "localhost:5000",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(3000),
+            expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds
         );
 
