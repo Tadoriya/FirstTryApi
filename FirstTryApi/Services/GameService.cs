@@ -1,6 +1,8 @@
 using FirstTryApi.Exceptions;
 using FirstTryApi.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
+using FirstTryApi.Hubs;
 
 namespace FirstTryApi.Services;
 
@@ -8,11 +10,13 @@ public class GameService
 {
     private readonly UserContext _context;
     private readonly ILogger<GameService> _logger;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public GameService(UserContext context, ILogger<GameService> logger)
+    public GameService(UserContext context, ILogger<GameService> logger, IHubContext<ChatHub> hubContext)
     {
         _context = context;
         _logger = logger;
+        _hubContext = hubContext;
     }
 
     public async Task<Progression> InitializeProgressionAsync(int userId)
@@ -75,12 +79,21 @@ public class GameService
             GlobaleScore.BestScore = prog.Count;
             GlobaleScore.UserId = userId;
         }
-
-        
+        if (prog.Count > prog.BestScore)
+            prog.BestScore = prog.Count;
+        var user = await _context.Users.FindAsync(userId);
+        var userName = user?.Username ?? $"User#{userId}";
+        var scoreBeforeReset = prog.Count;
         prog.Count = 0;
         prog.Multiplier++;
 
         await _context.SaveChangesAsync();
+        await _hubContext.Clients.All.SendAsync(
+            "ReceiveMessage",
+            "SYSTEM",
+            $"{userName} a reset son score de {scoreBeforeReset} points !"
+        );
+
 
         _logger.LogInformation("Reset success: UserId {UserId} NewMultiplier {Multiplier}", userId, prog.Multiplier);
 

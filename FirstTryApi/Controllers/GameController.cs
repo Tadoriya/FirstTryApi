@@ -4,6 +4,7 @@ using System.Security.Claims;
 using FirstTryApi.Services;
 using FirstTryApi.Models;
 using FirstTryApi.Exceptions;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FirstTryApi.Controllers;
 
@@ -37,6 +38,7 @@ public class GameController : ControllerBase
         => Ok(await _gameService.InitializeProgressionAsync(GetUserId()));
 
     [HttpGet("Click")]
+    [EnableRateLimiting("perUser")]
     public async Task<ActionResult<ClickResponse>> Click()
         => Ok(await _gameService.ClickAsync(GetUserId()));
 

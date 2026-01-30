@@ -29,7 +29,7 @@ public class Progression
             GlobaleScore.BestScore = Count;
             GlobaleScore.UserId=UserId;
         }
-        Count += Multiplier * TotalClickValue;
+        Count += Multiplier * (TotalClickValue + 1);
         
     }
 

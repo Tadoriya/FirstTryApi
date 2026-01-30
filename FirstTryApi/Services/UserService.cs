@@ -11,17 +11,20 @@ public class UserService
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly JwtService _jwtService;
     private readonly ILogger<UserService> _logger;
+    private readonly GameService? _gameService;
 
     public UserService(
         UserContext context,
         IPasswordHasher<User> passwordHasher,
         JwtService jwtService,
-        ILogger<UserService> logger)
+        ILogger<UserService> logger,
+        GameService? gameService=null)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
         _logger = logger;
+        _gameService = gameService;
     }
 
     private static UserPublic ToPublic(User u) => new UserPublic
@@ -86,10 +89,17 @@ public class UserService
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
-
-        var token = _jwtService.GenerateToken(user);
+        if (_gameService != null)
+        {
+            await _gameService.InitializeProgressionAsync(user.Id);
+        }
+        else
+        {
+            _context.Progressions.Add(new Progression(user.Id));
+            await _context.SaveChangesAsync();
+        }   var token = _jwtService.GenerateToken(user);
         _logger.LogInformation("Register success: {Username} ({Role})", user.Username, user.Role);
-
+        
         return (Token: token, User: ToPublic(user));
     }
 

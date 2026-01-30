@@ -8,6 +8,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using FirstTryApi.Middlewares;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using FirstTryApi.Hubs;
 
 
 namespace FirstTryApi;
@@ -52,18 +55,44 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.SetIsOriginAllowed(origin => true)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials(); 
+            });
         });
+
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        builder.Services.AddSignalR();
+        builder.Services.AddRateLimiter(options =>
+        {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddPolicy("perUser", context =>
+            {
+                var username =
+                    context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString();
+                return RateLimitPartition.GetFixedWindowLimiter( username!,_ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromSeconds(10),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }
+                );
+            });
+        });
+        builder.Services.AddHostedService<PassiveIncomeService>();
 
         var app = builder.Build();
         app.Logger.LogInformation("Application is starting up...");
 
 
-        // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -72,12 +101,13 @@ public class Program
         
         app.UseMiddleware<ErrorHandlingMiddleware>();
         app.UseMiddleware<LoggingMiddleware>();
-
+        app.UseCors();
         app.UseAuthentication();
         app.UseAuthorization();
-
-        app.UseCors("AllowAll");
+        
+        app.MapHub<ChatHub>("/hub/chat");
         //app.UseCors("AllowSpecificOrigin");
+        app.UseRateLimiter();
         app.MapControllers();
 
         app.Logger.LogInformation("Application startup complete. Ready to receive requests.");
