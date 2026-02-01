@@ -5,6 +5,8 @@ using FirstTryApi.Hubs;
 
 namespace FirstTryApi.Services;
 
+// Background service that periodically adds passive income to players
+
 public class PassiveIncomeService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -20,6 +22,7 @@ public class PassiveIncomeService : BackgroundService
         _tracker = tracker;
     }
 
+    // Executes the passive income loop and sends score updates to connected users
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)

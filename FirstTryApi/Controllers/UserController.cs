@@ -5,6 +5,7 @@ using FirstTryApi.Services;
 
 namespace FirstTryApi.Controllers;
 
+// Controller responsible for user management and authentication
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -22,6 +23,8 @@ public class UserController : ControllerBase
     public async Task<ActionResult<UserPublic>> GetById(int id)
         => Ok(await _userService.GetByIdAsync(id));
 
+
+    // Authenticates a user and returns a JWT token
     [HttpPost("Login")]
     [AllowAnonymous]
     public async Task<ActionResult<object>> Login([FromBody] UserPass info)
@@ -31,6 +34,7 @@ public class UserController : ControllerBase
     }
 
 
+    // Registers a new user and returns a JWT token
     [HttpPost("Register")]
     [AllowAnonymous]
     public async Task<ActionResult<object>> Register([FromBody] UserPass info)
@@ -50,6 +54,8 @@ public class UserController : ControllerBase
     public async Task<IActionResult> DeleteUser(int id)
         => Ok(await _userService.DeleteUserAsync(id));
 
+
+    // Returns all registered users
     [HttpGet("All")]
     [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
@@ -60,6 +66,8 @@ public class UserController : ControllerBase
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetAllAdmins()
         => Ok(await _userService.GetAllAdminsAsync());
 
+
+    // Searches users by username
     [HttpGet("Search/{name}")]
     [Authorize]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetByName(string name)

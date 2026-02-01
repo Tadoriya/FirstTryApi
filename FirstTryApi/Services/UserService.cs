@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FirstTryApi.Services;
 
+// Service responsible for user creation and authentication logic
+
 public class UserService
 {
     private readonly UserContext _context;
@@ -67,6 +69,7 @@ public class UserService
             .ToListAsync();
     }
 
+    // Creates a new user
     public async Task<(string Token, UserPublic User)> RegisterAsync(UserPass info)
     {
         _logger.LogInformation("Register attempt: {Username}", info.Username);
@@ -104,6 +107,7 @@ public class UserService
         return (Token: token, User: ToPublic(user));
     }
 
+    // Verifies user credentials
     public async Task<(string Token, UserPublic User)> LoginAsync(UserPass info)
     {
         _logger.LogInformation("Login attempt: {Username}", info.Username);

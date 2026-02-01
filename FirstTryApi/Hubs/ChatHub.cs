@@ -5,6 +5,8 @@ using System.Security.Claims;
 
 namespace FirstTryApi.Hubs;
 
+// SignalR hub handling real-time communication between players
+
 public class ChatHub : Hub
 {
     private readonly ConnectionTrackerService _tracker;
@@ -15,6 +17,9 @@ public class ChatHub : Hub
         _tracker = tracker;
         _logger = logger;
     }
+
+    
+    // Registers a user when they connect to the hub
     public async Task Login(int userId)
     {
         _tracker.AddConnection(userId, Context.ConnectionId);
@@ -54,6 +59,7 @@ public class ChatHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
+    // Sends a chat message to all connected users
     public async Task SendMessage(string userName, string message)
     {
         await Clients.All.SendAsync("ReceiveMessage", userName, message);

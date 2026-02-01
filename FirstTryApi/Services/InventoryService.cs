@@ -5,6 +5,9 @@ using System.Net.Http.Json;
 
 namespace FirstTryApi.Services;
 
+
+// Service responsible for item and inventory logic
+
 public class InventoryService
 {
     private readonly UserContext _context;
@@ -20,6 +23,7 @@ public class InventoryService
         _logger = logger;
     }
 
+    // Seeds default items into the database
     public async Task<bool> SeedInventoryAsync()
     {
         _logger.LogInformation("Inventory seeding started");
@@ -49,6 +53,7 @@ public class InventoryService
         return true;
     }
 
+    // Returns all available items
     public async Task<List<Item>> GetAllItemsAsync()
     {
         var items = await _context.Items.ToListAsync();
@@ -58,6 +63,7 @@ public class InventoryService
         return items;
     }
 
+    // Handles item purchase and inventory updates
     public async Task<List<InventoryEntry>> GetUserInventoryAsync(int userId)
     {
         return await _context.Inventories

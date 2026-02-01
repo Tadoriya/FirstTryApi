@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 
 namespace FirstTryApi.Services;
 
+// Service used to track connected users and their SignalR connections
+
 public class ConnectionTrackerService
 {
     private readonly ConcurrentDictionary<int, HashSet<string>> _userConnections = new();
@@ -10,6 +12,7 @@ public class ConnectionTrackerService
 
     public int OnlineUserCount => _userConnections.Count;
 
+    // Registers a new user connection
     public void AddConnection(int userId, string connectionId)
     {
         _userConnections.AddOrUpdate(
@@ -27,6 +30,7 @@ public class ConnectionTrackerService
         _connectionToUser[connectionId] = userId;
     }
 
+    // Removes a disconnected user
     public void RemoveConnection(string connectionId)
     {
         if (!_connectionToUser.TryRemove(connectionId, out int userId))
@@ -58,6 +62,7 @@ public class ConnectionTrackerService
         return Enumerable.Empty<string>();
     }
 
+    // Checks whether a user is currently online
     public bool IsOnline(int userId) => _userConnections.ContainsKey(userId);
 
     public bool TryGetUserId(string connectionId, out int userId)

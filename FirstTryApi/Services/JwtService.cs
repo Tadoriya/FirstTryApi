@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace FirstTryApi.Services;
 
+// Service responsible for generating JWT authentication tokens
+
 public class JwtService
 {
     private readonly IConfiguration _configuration;
@@ -17,6 +19,7 @@ public class JwtService
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
 
+    // Generates a JWT token for an authenticated user
     public string GenerateToken(User user)
     {
         var claims = new[]
@@ -26,7 +29,6 @@ public class JwtService
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        // ✅ IMPORTANT: compatible avec le test du prof (configMock.Setup(c => c["JWTKey"])...)
         var keyString = _configuration["JWTKey"] ?? "MessiIsTheGreatestOfAllTime8BallonDors";
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));

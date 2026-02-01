@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace FirstTryApi.Controllers;
 
+    // Controller responsible for inventory and item management
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
@@ -35,23 +36,27 @@ namespace FirstTryApi.Controllers;
             return userId;
         }
 
+        // Seeds the inventory with default items
         [HttpGet("Seed")]
         [AllowAnonymous]
         public async Task<ActionResult<bool>> Seed()
             => Ok(await _inventoryService.SeedInventoryAsync());
 
+
+        // Returns all available items
         [HttpGet("Items")]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Item>>> GetItems()
             => Ok(await _inventoryService.GetAllItemsAsync());
 
+        // Returns the inventory of the current user
         [HttpGet("UserInventory")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<InventoryEntry>>> GetUserInventory()
             => Ok(await _inventoryService.GetUserInventoryAsync(GetUserId()));
 
         
-
+        // Allows the user to buy an item
         [HttpPost("Buy/{itemId}")]
         [EnableRateLimiting("perUser")]
         public async Task<ActionResult<IEnumerable<InventoryEntry>>> BuyItem(int itemId) 

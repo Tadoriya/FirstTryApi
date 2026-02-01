@@ -10,6 +10,9 @@ using FirstTryApi.Hubs;
 using Microsoft.EntityFrameworkCore;
 namespace FirstTryApi.Controllers;
 
+// Controller responsible for all game-related actions
+// Exposes endpoints for progression, clicks, reset and best score
+
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
@@ -36,16 +39,20 @@ public class GameController : ControllerBase
         return userId;
     }
 
+    // Retrieves the current authenticated user's progression
     [HttpGet("Progression")]
     [Authorize]
     public async Task<ActionResult<Progression>> GetProgression()
         => Ok(await _gameService.GetProgressionAsync(GetUserId()));
 
+    // Initializes a new progression for the current user
     [HttpGet("Initialize")]
     [Authorize]
     public async Task<ActionResult<Progression>> InitProgression()
         => Ok(await _gameService.InitializeProgressionAsync(GetUserId()));
 
+
+    // Handles a click action and updates the player's score
     [HttpGet("Click")]
     [Authorize]
     [EnableRateLimiting("perUser")]
@@ -57,6 +64,7 @@ public class GameController : ControllerBase
         return response;
     }
 
+    // Returns the cost required to reset the progression
     [HttpGet("ResetCost")]
     [Authorize]
     public async Task<ResetCostResponse> GetResetCost()
@@ -67,6 +75,8 @@ public class GameController : ControllerBase
         return cost;
     }
 
+
+    // Resets the player's progression and increases the multiplier
     [HttpPost("Reset")]
     [Authorize]
     public async Task<Progression> Reset() 
@@ -76,6 +86,7 @@ public class GameController : ControllerBase
         return progAfter;
     }
 
+    // Returns the global best score among all players
     [HttpGet("BestScore")]
     [Authorize]
     public async Task<BestScoreResponse> GetBestScore()

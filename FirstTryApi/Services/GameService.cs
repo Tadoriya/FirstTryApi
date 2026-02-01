@@ -8,6 +8,9 @@ using System.Security.Claims;
 
 namespace FirstTryApi.Services;
 
+// Service containing the core game logic
+// Handles progression, clicks, reset and high score logic
+
 public class GameService
 {
     private readonly UserContext _context;
@@ -24,6 +27,7 @@ public class GameService
         _hubContext = hubContext;
     }
 
+    // Initializes a progression for a user if it does not exist
     public async Task<Progression> InitializeProgressionAsync(int userId)
     {
         bool exists = await _context.Progressions.AnyAsync(p => p.UserId == userId);
@@ -44,6 +48,7 @@ public class GameService
         }
     }
 
+    // Retrieves the progression of a user
     public async Task<Progression> GetProgressionAsync(int userId)
     {
         
@@ -56,7 +61,9 @@ public class GameService
         return prog;
     }
 
-   public async Task<ClickResponse> ClickAsync(int userId)
+    // Processes a click and updates the score
+    // Also checks for new global high scores
+    public async Task<ClickResponse> ClickAsync(int userId)
     {
         var prog = await _context.Progressions.FirstOrDefaultAsync(p => p.UserId == userId);
         if (prog == null)
@@ -104,6 +111,7 @@ public class GameService
         return new ClickResponse(prog.Count, prog.Multiplier);
     }
 
+    // Calculates the reset cost for a user
     public async Task<ResetCostResponse> GetResetCostAsync(int userId)
     {
         var prog = await _context.Progressions.FirstOrDefaultAsync(p => p.UserId == userId);
@@ -114,6 +122,7 @@ public class GameService
         return new ResetCostResponse(cost);
     }
 
+    // Resets the progression and updates the multiplier
     public async Task<Progression> ResetProgressionAsync(int userId)
     {
         _logger.LogInformation("Progression reset attempt: UserId {UserId}", userId);
@@ -160,6 +169,7 @@ public class GameService
         return prog;
     }
 
+    // Returns the best score achieved by any user
     public async Task<BestScoreResponse> GetBestScoreAsync()
     {
         
