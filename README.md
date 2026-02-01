@@ -1,16 +1,16 @@
-# 🎮 Incremental Clicker – Backend ASP.NET Core
+# Incremental Clicker – Backend ASP.NET Core
 
-Backend d’un jeu incrémental multijoueur développé en **ASP.NET Core**, intégrant une **API REST**, de la **persistance serveur**, des **mécaniques de progression** et des **fonctionnalités temps réel via SignalR**.
+Backend d’un jeu incrémental multijoueur développé en **ASP.NET Core**.  
+Il fournit une **API REST**, une **persistance serveur**, des **mécaniques de progression** et des **fonctionnalités temps réel via SignalR**.
 
 Le projet met l’accent sur :
-
-- une logique de jeu robuste côté serveur  
-- une architecture claire et modulaire  
-- des tests unitaires avec mesure de couverture  
+- une logique de jeu robuste côté serveur,
+- une architecture claire et modulaire,
+- des tests unitaires avec mesure de couverture.
 
 ---
 
-## 📚 Table des matières
+## Table des matières
 
 - Aperçu  
 - Fonctionnalités  
@@ -24,42 +24,42 @@ Le projet met l’accent sur :
 - Background services  
 - Tests & couverture  
 - Structure du projet  
+- Contributeur  
 
 ---
 
-## 🔍 Aperçu
+## Aperçu
 
 Ce backend alimente un jeu incrémental dans lequel les joueurs :
 
-- gagnent des points par clic  
-- achètent des objets améliorant la production  
-- bénéficient d’un revenu passif  
-- battent des records visibles en temps réel  
-- interagissent via un chat global  
+- gagnent des points par clic,
+- achètent des objets améliorant la production,
+- bénéficient d’un revenu passif,
+- battent des records visibles en temps réel,
+- interagissent via un chat global.
 
-Toutes les règles critiques sont **gérées côté serveur** afin de garantir la **cohérence**, la **sécurité** et l’équité entre les joueurs.
+Toutes les règles critiques sont **gérées côté serveur** afin de garantir la cohérence, la sécurité et l’équité.
 
 ---
 
-## ✨ Fonctionnalités principales
+## Fonctionnalités
 
-- 🔐 Authentification JWT  
-- 🖱️ Progression par clic (avec rate limiting)  
-- ♻️ Système de reset avec multiplicateurs  
-- 🏆 Notifications de records en temps réel  
-- 🛒 Inventaire avec limites de quantité  
-- 💰 Revenu passif via background service  
-- 💬 Chat global via SignalR  
-- 👥 Compteur de joueurs connectés  
-- 📡 Événements temps réel :
+- Authentification JWT  
+- Progression par clic avec rate limiting  
+- Système de reset avec multiplicateurs  
+- Notifications de records en temps réel  
+- Inventaire avec limites de quantité  
+- Revenu passif via background service  
+- Chat global via SignalR  
+- Compteur de joueurs connectés  
+- Événements temps réel :
   - `ScoreUpdate`
   - `NewHighScore`
   - `PlayerReset`
-- 🧪 Tests unitaires + couverture de code  
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Architecture en couches avec responsabilités bien séparées :
 
@@ -71,19 +71,18 @@ Architecture en couches avec responsabilités bien séparées :
 - **Background Services** : revenu passif  
 
 SignalR est utilisé pour :
-
-- le chat global  
-- les notifications système  
-- la synchronisation des scores en temps réel  
+- le chat,
+- les notifications système,
+- la synchronisation des scores en temps réel.
 
 ---
 
-## 🚀 Démarrage rapide
+## Démarrage rapide
 
 ### Prérequis
 
-- .NET SDK **8.0+**
-- CLI `dotnet`
+- .NET SDK 8.0 ou supérieur  
+- CLI `dotnet`  
 
 ### Build
 
@@ -93,46 +92,48 @@ dotnet build
 Lancer l’API
 dotnet run --project FirstTryApi
 API disponible sur :
-👉 http://localhost:5000
 
-⚙️ Configuration
+http://localhost:5000
+Configuration
 Points importants :
 
-🔑 JWT configuré dans :
+JWT configuré dans :
 
 Services/JwtService.cs
 
 Program.cs
 
-🌐 CORS autorisé pour :
+CORS autorisé pour :
 
 http://localhost:*
 
 https://csharp.nouvet.fr
 
-🗄️ Base de données SQLite
+Base de données SQLite :
 
 fichier local géré par EF Core
 
-📦 Seed des items depuis :
+Seed des items depuis :
 
 https://csharp.nouvet.fr/front10/items.json
 
-🔐 Authentification
-Endpoints
+Authentification
+Endpoints disponibles :
+
 POST /api/User/Register
 
 POST /api/User/Login
 
-Utilisation
+Utilisation :
+
 Récupérer le token JWT
 
-Ajouter le header :
+Ajouter le header suivant :
 
 Authorization: Bearer <token>
 Accéder aux routes protégées
 
-📡 API & SignalR
+API & SignalR
 API REST
 /api/Game/* : progression, clics, reset, scores
 
@@ -153,39 +154,39 @@ PlayerReset(username, score)
 
 ScoreUpdate(score) (envoyé uniquement au joueur concerné)
 
-Connexion :
+Connexion SignalR :
 
 /hub/chat
-🎯 Gameplay et progression
+Gameplay et progression
 Chaque clic augmente le score selon :
 
-le multiplicateur
+le multiplicateur,
 
-la valeur totale des objets
+la valeur totale des objets.
 
-Les objets ont :
+Les objets possèdent :
 
-un prix
+un prix,
 
-une quantité maximale
+une quantité maximale,
 
-un bonus de production
+un bonus de production.
 
 Le reset :
 
-consomme des points
+consomme des points,
 
-augmente le multiplicateur
+augmente le multiplicateur,
 
-déclenche un événement SignalR
+déclenche un événement SignalR.
 
 Les records sont :
 
-mis en cache
+mis en cache,
 
-notifiés uniquement lorsqu’un seuil est franchi
+notifiés uniquement lorsqu’un seuil est franchi.
 
-🗄️ Base de données
+Base de données
 EF Core (Code First)
 
 Entités principales :
@@ -202,7 +203,7 @@ Migrations EF Core incluses
 
 Seed automatique des items
 
-🔄 Background services
+Background services
 PassiveIncomeService
 Exécuté périodiquement
 
@@ -212,28 +213,25 @@ Envoie ScoreUpdate uniquement aux joueurs connectés
 
 Gère l’overflow (int.MaxValue)
 
-🧪 Tests & couverture
+Tests & couverture
 Lancer les tests
 dotnet test
 Générer la couverture
 dotnet test --collect:"XPlat Code Coverage"
 Générer le rapport HTML
-reportgenerator \
-  -reports:TestResults/**/coverage.cobertura.xml \
-  -targetdir:coveragereport \
-  -reporttypes:Html
+reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:coveragereport -reporttypes:Html
 Rapport disponible ici :
 
 coveragereport/index.html
 Objectifs atteints :
 
-GameService ≈ 100%
+GameService ≈ 100 %
 
 Tests sur services critiques
 
 Validation des règles métier
 
-📁 Structure du projet
+Structure du projet
 Incremental_Clicker/
 ├── FirstTryApi/
 │   ├── Controllers/
@@ -250,3 +248,5 @@ Incremental_Clicker/
 ├── coveragereport/
 ├── IncrementalGame.sln
 └── README.md
+Contributeur
+Taha AIT AHMED OUAAL(F2)
