@@ -10,14 +10,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FirstTryApi.Migrations
 {
     [DbContext(typeof(UserContext))]
-    [Migration("20251130131341_Rename")]
-    partial class Rename
+    [Migration("20260201214045_User")]
+    partial class User
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.12");
 
             modelBuilder.Entity("FirstTryApi.Models.InventoryEntry", b =>
                 {

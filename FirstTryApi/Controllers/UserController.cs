@@ -18,6 +18,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<UserPublic>> GetById(int id)
         => Ok(await _userService.GetByIdAsync(id));
 
@@ -32,7 +33,7 @@ public class UserController : ControllerBase
 
     [HttpPost("Register")]
     [AllowAnonymous]
-   public async Task<ActionResult<object>> Register([FromBody] UserPass info)
+    public async Task<ActionResult<object>> Register([FromBody] UserPass info)
     {
         var result = await _userService.RegisterAsync(info);
         return Ok(new { token = result.Token, user = result.User });
@@ -50,6 +51,7 @@ public class UserController : ControllerBase
         => Ok(await _userService.DeleteUserAsync(id));
 
     [HttpGet("All")]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetAll()
         => Ok(await _userService.GetAllAsync());
 
@@ -59,6 +61,7 @@ public class UserController : ControllerBase
         => Ok(await _userService.GetAllAdminsAsync());
 
     [HttpGet("Search/{name}")]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<UserPublic>>> GetByName(string name)
         => Ok(await _userService.SearchAsync(name));
 }

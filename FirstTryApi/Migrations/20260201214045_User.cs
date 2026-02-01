@@ -5,7 +5,7 @@
 namespace FirstTryApi.Migrations
 {
     /// <inheritdoc />
-    public partial class Rename : Migration
+    public partial class User : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

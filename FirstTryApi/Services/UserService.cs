@@ -34,6 +34,7 @@ public class UserService
         Role = u.Role
     };
 
+
     public async Task<List<UserPublic>> GetAllAsync()
     {
         return await _context.Users

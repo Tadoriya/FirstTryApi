@@ -32,6 +32,7 @@ public class Program
         builder.Services.AddScoped<UserService>();
         builder.Services.AddScoped<GameService>();
         builder.Services.AddScoped<InventoryService>();
+        builder.Services.AddSingleton<ConnectionTrackerService>();
 
 
 

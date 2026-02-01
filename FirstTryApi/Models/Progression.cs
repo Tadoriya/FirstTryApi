@@ -24,12 +24,9 @@ public class Progression
 
     public void AddClick()
     {
-        if (Count > GlobaleScore.BestScore)
-        {
-            GlobaleScore.BestScore = Count;
-            GlobaleScore.UserId=UserId;
-        }
         Count += Multiplier * (TotalClickValue + 1);
+        if (Count > BestScore)
+            BestScore = Count;
         
     }
 
@@ -37,7 +34,11 @@ public class Progression
     {
         double factor = 1.5;
         double cost = 100 * (Math.Pow(factor, Multiplier - 1));
-        return (int)Math.Floor(cost);
+        int x = (int)Math.Floor(cost);
+        Console.WriteLine(
+            $"[RESET COST] UserId={UserId} | Multiplier={Multiplier} | RawCost={cost} | FinalCost={x}"
+        );
+        return x;
     }
 
     public int TryReset()
@@ -45,6 +46,8 @@ public class Progression
         int cost = CalculateResetCost();
         if (Count < cost)
             return 0;
+        if (Count > BestScore)
+            BestScore = Count;
         Count = 0;
         Multiplier++;
         return 1;

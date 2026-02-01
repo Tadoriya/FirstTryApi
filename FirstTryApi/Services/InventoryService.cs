@@ -11,7 +11,7 @@ public class InventoryService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<InventoryService> _logger;
 
-    private const string Lien = "https://csharp.nouvet.fr/front4/items.json";
+    private const string Lien = "https://csharp.nouvet.fr/front10/items.json";
 
     public InventoryService(UserContext context, IHttpClientFactory httpClientFactory, ILogger<InventoryService> logger)
     {
@@ -65,65 +65,75 @@ public class InventoryService
             .ToListAsync();
     }
 
+    public async Task<string> GetUsernameAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        return user?.Username ?? "Unknown";
+    }
+
+    public async Task<Item?> GetItemByIdAsync(int itemId)
+    {
+        return await _context.Items.FindAsync(itemId);
+    }
 
     public async Task<List<InventoryEntry>> BuyItemAsync(int userId, int itemId)
     {
         _logger.LogInformation("Item purchase attempt: UserId {UserId}, ItemId {ItemId}", userId, itemId);
 
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            throw new GameException("User not found", "USER_NOT_FOUND", 404);
 
-        try
+        var item = await _context.Items.FindAsync(itemId);
+        if (item == null)
+            throw new GameException("Item not found", "ITEM_NOT_FOUND", 404);
+
+        var prog = await _context.Progressions.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (prog == null)
+            throw new GameException("Progression not found", "PROGRESSION_NOT_FOUND", 404);
+
+        if (prog.Count < item.Price)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                throw new GameException("User not found", "USER_NOT_FOUND", 404);
+            _logger.LogWarning(
+                "Item purchase failed: Not enough money - UserId {UserId}, ItemId {ItemId}, Available: {Available}, Required: {Required}",
+                userId, itemId, prog.Count, item.Price
+            );
+            throw new GameException("Not enough money", "NOT_ENOUGH_MONEY", 400);
+        }
 
-            var item = await _context.Items.FindAsync(itemId);
-            if (item == null)
-                throw new GameException("Item not found", "ITEM_NOT_FOUND", 404);
+        var inv = await _context.Inventories
+            .FirstOrDefaultAsync(i => i.UserId == userId && i.ItemId == itemId);
 
-            var prog = await _context.Progressions.FirstOrDefaultAsync(p => p.UserId == userId);
-            if (prog == null)
-                throw new GameException("User does not have a progression", "NO_PROGRESSION", 400);
-
-            if (prog.Count < item.Price)
-                throw new GameException("Not enough money", "NOT_ENOUGH_MONEY", 400);
-
-            prog.Count -= item.Price;
-
-            var inv = await _context.Inventories
-                .FirstOrDefaultAsync(i => i.UserId == userId && i.ItemId == itemId);
-
-            if (inv == null)
+        if (inv != null)
+        {
+            if (inv.Quantity >= item.MaxQuantity)
             {
-                inv = new InventoryEntry
-                {
-                    UserId = userId,
-                    ItemId = itemId,
-                    Quantity = 1
-                };
-                _context.Inventories.Add(inv);
-            }
-            else
-            {
-                inv.Quantity++;
+                _logger.LogWarning("Item purchase failed: MaxQuantity reached - UserId {UserId}, ItemId {ItemId}", userId, itemId);
+                throw new GameException("Inventory full", "INVENTORY_FULL", 400);
             }
 
-            prog.TotalClickValue += item.ClickValue;
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation("Item purchased successfully: UserId {UserId}, ItemId {ItemId}", userId, itemId);
-
-            return await _context.Inventories
-                .Where(i => i.UserId == userId)
-                .ToListAsync();
+            inv.Quantity++;
         }
-        catch
+        else
         {
-            await transaction.RollbackAsync();
-            throw;
+            inv = new InventoryEntry
+            {
+                UserId = userId,
+                ItemId = itemId,
+                Quantity = 1
+            };
+            _context.Inventories.Add(inv);
         }
+
+        prog.Count -= item.Price;
+        prog.TotalClickValue += item.ClickValue;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Item purchased successfully: UserId {UserId}, ItemId {ItemId}", userId, itemId);
+
+        return await _context.Inventories
+            .Where(i => i.UserId == userId)
+            .ToListAsync();
     }
 }
